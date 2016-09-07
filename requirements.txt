@@ -1,0 +1,2 @@
+elasticsearch==2.4.0
+forked-path==0.2.3
