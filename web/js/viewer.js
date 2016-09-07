@@ -10,4 +10,19 @@ $(document).ready(function() {
             }
         });
     });
+
+
+    $('input#fuzzy_query').keyup(function(){
+        var val = $(this).val();
+        var fuzziness = $('#fuzziness').val();
+        resp = es_dao.search_with_highlight_fuzzy(val, fuzziness, function(matches){
+            $('#response').html('');
+            console.log(matches);
+            for (i=0; i<matches.length; i++) {
+                var div = '<div> <h3>'+matches[i]['title']+ '</h3> <div class="content">'+ matches[i]['content'] +'</div> </div>';
+                $('#response').append(div);
+            }
+        });
+    });
+
 });

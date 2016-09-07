@@ -28,6 +28,7 @@ def indexDir(dir):
 
     print 'Indexing dir ' + dir
 
+    es.indices.delete(index=INDEX)
     createIndexIfDoesntExist()
 
     for path, dirs, files in os.walk(dir):
@@ -74,7 +75,8 @@ def createIndexIfDoesntExist():
                                 "content": {
                                     "type": "string",
                                     "term_vector":"with_positions_offsets",
-                                    "store": True
+                                    "store": True,
+                                    "analyzer": "english"
                                 }
                             }
                         }
