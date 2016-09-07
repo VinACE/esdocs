@@ -1,5 +1,6 @@
 import os
 import sys
+from elasticsearch import Elasticsearch
 
 # constants, configure to match your environment
 HOST = 'http://localhost:9200'
@@ -8,11 +9,12 @@ TYPE = 'attachment'
 TMP_FILE_NAME = 'tmp.json'
 # for supported formats, see apache tika - http://tika.apache.org/1.4/formats.html
 INDEX_FILE_TYPES = ['html','pdf', 'doc', 'docx', 'xls', 'xlsx', 'xml']
+es = Elasticsearch([HOST])
 
 def main():
     current_dir = os.getcwd()
     print(current_dir)
-    indexDir(current_dir)
+    indexDir(current_dir+'\\res')
 
 
 def indexFile(fname):
@@ -26,10 +28,7 @@ def indexDir(dir):
 
     print 'Indexing dir ' + dir
 
-    if not createIndexIfDoesntExist():
-        return -1
-    if not createTypeWithMappingIfDoesntExist():
-        return -1
+    createIndexIfDoesntExist()
 
     for path, dirs, files in os.walk(dir):
         for file in files:
@@ -43,16 +42,16 @@ def indexDir(dir):
                 'Skipping {}, not approved file type: {}'.format(fname, extension)
 
 def postFileToTheIndex():
-    cmd = 'curl -X POST "{}/{}/{}" -d @'.format(HOST,INDEX,TYPE) + TMP_FILE_NAME
-    print cmd
-    os.system(cmd)
-    
+    import json
+    print(TMP_FILE_NAME)
+    f = open(TMP_FILE_NAME, 'r')
+    doc = json.load(f)      
+    res = es.index(index=INDEX, doc_type=TYPE, body=doc)
+
 
 def createEncodedTempFile(fname):
     import json
-
     file64 = open(fname, "rb").read().encode("base64")
-
     print 'writing JSON with base64 encoded file to temp file {}'.format(TMP_FILE_NAME)
 
     f = open(TMP_FILE_NAME, 'w')
@@ -62,68 +61,33 @@ def createEncodedTempFile(fname):
     print('written')
 
 def createIndexIfDoesntExist():
-    import urllib2
+    if not es.indices.exists(INDEX):
+        
 
-    class HeadRequest(urllib2.Request):
-        def get_method(self):
-            return "HEAD"
-
-    # check if type exists by sending HEAD request to index
-    try:
-        urllib2.urlopen(HeadRequest(HOST + '/' + INDEX + '/' + TYPE))
-        return True;
-    except urllib2.HTTPError, e:
-        if e.code == 404:
-            print ('Index doesnt exist, creating... \n')
-            os.system('curl -X PUT "{}/{}"'.format(HOST,INDEX));
-            print ('Index created... \n')
-            return True;
-        else:
-            print 'Failed to retrieve index with error code - %s.' % e.code
-            return False
-
-def createTypeWithMappingIfDoesntExist():
-    import urllib2
-
-    class HeadRequest(urllib2.Request):
-        def get_method(self):
-            return "HEAD"
-
-    # check if type exists by sending HEAD request to index
-    try:
-        urllib2.urlopen(HeadRequest(HOST + '/' + INDEX + '/' + TYPE))
-        return True;
-    except urllib2.HTTPError, e:
-        if e.code == 404:
-            print ('settings for host {} index {} and type {} \n'.format(HOST,INDEX,TYPE))
-            print ('Type doesnt exist, creating... \n')
-            # os.system('curl -X PUT "{}/{}/{}/_mapping" -d'.format(HOST,INDEX,TYPE) + ''' '{
-            #       "attachment" : {
-            #         "properties" : {
-            #           "file" : {
-            #             "type" : "attachment",
-            #             "fields" : {
-            #               "title" : { "store" : "yes" },
-            #               "file" : { "term_vector":"with_positions_offsets", "store":"yes" }
-            #             }
-            #           }
-            #         }
-            #       }
-            #     }' ''')
-            os.system('curl -X PUT "{}/{}/{}/_mapping" -d'.format(HOST,INDEX,TYPE) + ''' '{
-                  "attachment" : {
+        body = {
+            "mappings" : {
+                "attachment" : {
                     "properties" : {
-                      "file" : {
-                        "type" : "attachment"
-                      }
+                        "file" : {
+                            "type" : "attachment",  
+                            "fields": {
+                                "content": {
+                                    "type": "string",
+                                    "term_vector":"with_positions_offsets",
+                                    "store": True
+                                }
+                            }
+                        }
                     }
-                  }
-                }' ''')
-            print('Mapping for type {} created'.format(TYPE))
-            return True;
-        else:
-            print 'Failed to retrieve index with error code - %s.' % e.code
-            return False
+                }
+            }
+        }
+
+        es.indices.create(index=INDEX, body=body)
+        print('index {} created'.format(INDEX))
+
+
+
 
 # kick off the main function when script loads
 main()
