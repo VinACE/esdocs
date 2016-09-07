@@ -1,0 +1,15 @@
+GET /test/attachment/_search
+{
+  "fields": [],
+  "query": {
+    "match": {
+      "file.content": "kurka"
+    }
+  },
+  "highlight": {
+    "fields": {
+      "file.content": {
+      }
+    }
+  }
+}
