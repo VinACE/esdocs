@@ -11,24 +11,28 @@ TMP_FILE_NAME = 'tmp.json'
 INDEX_FILE_TYPES = ['html','pdf', 'doc', 'docx', 'xls', 'xlsx', 'xml']
 es = Elasticsearch([HOST])
 
+
+def log(txt):
+    print(txt)
+
+
 def main():
     current_dir = os.getcwd()
-    print(current_dir)
-    indexDir(current_dir+'\\res')
+    log(current_dir)
+    indexDir(current_dir+'\\talks')
 
 
 def indexFile(fname):
-    print '\nIndexing ' + fname
+    log('\nIndexing ' + fname)
     createEncodedTempFile(fname)
     postFileToTheIndex()
     os.remove(TMP_FILE_NAME)
-    print '\n-----------'
-
+    
 def indexDir(dir):
 
-    print 'Indexing dir ' + dir
+    log('Indexing dir ' + dir)
 
-    es.indices.delete(index=INDEX)
+    # es.indices.delete(index=INDEX)
     createIndexIfDoesntExist()
 
     for path, dirs, files in os.walk(dir):
@@ -44,7 +48,7 @@ def indexDir(dir):
 
 def postFileToTheIndex():
     import json
-    print(TMP_FILE_NAME)
+    log(TMP_FILE_NAME)
     f = open(TMP_FILE_NAME, 'r')
     doc = json.load(f)      
     res = es.index(index=INDEX, doc_type=TYPE, body=doc)
@@ -53,13 +57,13 @@ def postFileToTheIndex():
 def createEncodedTempFile(fname):
     import json
     file64 = open(fname, "rb").read().encode("base64")
-    print 'writing JSON with base64 encoded file to temp file {}'.format(TMP_FILE_NAME)
+    log('writing JSON with base64 encoded file to temp file {}'.format(TMP_FILE_NAME))
 
     f = open(TMP_FILE_NAME, 'w')
     data = { 'file': file64, 'title': fname }
     json.dump(data, f) # dump json to tmp file
     f.close()
-    print('written')
+    log('written')
 
 def createIndexIfDoesntExist():
     if not es.indices.exists(INDEX):
@@ -86,7 +90,7 @@ def createIndexIfDoesntExist():
         }
 
         es.indices.create(index=INDEX, body=body)
-        print('index {} created'.format(INDEX))
+        log('index {} created'.format(INDEX))
 
 
 
