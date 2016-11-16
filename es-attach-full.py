@@ -1,6 +1,8 @@
 import os
 import sys
 from elasticsearch import Elasticsearch
+import base64
+
 
 # constants, configure to match your environment
 HOST = 'http://localhost:9200'
@@ -19,7 +21,7 @@ def log(txt):
 def main():
     current_dir = os.getcwd()
     log(current_dir)
-    indexDir(current_dir+'\\talks')
+    indexDir(current_dir+'\\files_to_index')
 
 
 def indexFile(fname):
@@ -56,11 +58,15 @@ def postFileToTheIndex():
 
 def createEncodedTempFile(fname):
     import json
-    file64 = open(fname, "rb").read().encode("base64")
-    log('writing JSON with base64 encoded file to temp file {}'.format(TMP_FILE_NAME))
+    image_file = open(fname, "rb")
+    content = image_file.read()
+    file64bytes = base64.b64encode(content)
+    ENCODING = 'utf-8'
+    file64string = file64bytes.decode(ENCODING)
 
+    log('writing JSON with base64 encoded file to temp file {}'.format(TMP_FILE_NAME))
     f = open(TMP_FILE_NAME, 'w')
-    data = { 'file': file64, 'title': fname }
+    data = { 'file': file64string, 'title': fname }
     json.dump(data, f) # dump json to tmp file
     f.close()
     log('written')
