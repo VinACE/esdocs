@@ -2,25 +2,46 @@ import os
 import sys
 from elasticsearch import Elasticsearch
 import base64
+import getopt
 
 
 # constants, configure to match your environment
-HOST = 'http://localhost:9200'
-INDEX = 'test'
-TYPE = 'attachment'
+HOST = None
+INDEX = None
+TYPE = None
 TMP_FILE_NAME = 'tmp.json'
 # for supported formats, see apache tika - http://tika.apache.org/1.4/formats.html
 INDEX_FILE_TYPES = ['html','pdf', 'doc', 'docx', 'xls', 'xlsx', 'xml']
-es = Elasticsearch([HOST])
+es = None
 
 
 def log(txt):
     print(txt)
 
 
-def main():
+def main(argv):
+    host_arg = None
+    index_arg = None
+    type_arg = None
+    try:
+      opts, args = getopt.getopt(argv,"h:i:o:")
+    except getopt.GetoptError:
+      print('esdocs.py -h <ES host> -i <index name> -t <type>')
+      sys.exit(2)
+    for opt, arg in opts:
+        print(opt)
+        if opt == '-h':            
+            host_arg = arg
+        elif opt == '-i':
+            index_arg = arg
+        elif opt == '-t':
+            type_arg = arg
+    INDEX = index_arg or 'test'
+    TYPE =  type_arg or 'attachment'
+    HOST = host_arg or 'http://localhost:9200'
+    print(INDEX,TYPE,HOST)
+    es = Elasticsearch([HOST])
     current_dir = os.getcwd()
-    log(current_dir)
     indexDir(current_dir+'\\files_to_index')
 
 
@@ -101,5 +122,5 @@ def createIndexIfDoesntExist():
 
 
 
-# kick off the main function when script loads
-main()
+if __name__ == "__main__":
+   main(sys.argv[1:])
