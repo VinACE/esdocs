@@ -36,10 +36,12 @@ def main(argv):
             index_arg = arg
         elif opt == '-t':
             type_arg = arg
+    global INDEX,TYPE,HOST
     INDEX = index_arg or 'test'
     TYPE =  type_arg or 'attachment'
     HOST = host_arg or 'http://localhost:9200'
     print(INDEX,TYPE,HOST)
+    global es
     es = Elasticsearch([HOST])
     current_dir = os.getcwd()
     indexDir(current_dir+'\\files_to_index')
