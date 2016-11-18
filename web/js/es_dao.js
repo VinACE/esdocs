@@ -7,14 +7,20 @@ EsDao = function() {
         var index = 'test';
         var type = 'attachment';
         data = {
+          "size" : 100,
           "query": {
             "match": {
               "file.content": query
             }
           },
           "highlight": {
+            
+            "pre_tags" : ["<mark>"],
+            "post_tags" : ["</mark>"],
             "fields": {
               "file.content": {
+                    "fragment_size" : 50,
+                    "number_of_fragments" : 20
               }
             }
           }
@@ -26,16 +32,27 @@ EsDao = function() {
             dataType: 'json',
             data : JSON.stringify(data),
             success: function(resp){
-                console.log(resp);
                 len = resp.hits.hits.length;
                 elements = [];
                 if (len > 0) {                    
-                    for (i=0; i<len; i++) {
-                        content = resp.hits.hits[i]['highlight']['file.content'][0];
+                    // console.log(resp.hits.hits[0])
+                    for (i=0; i<len; i++) {   
+
                         title = resp.hits.hits[i]['_source']['title'];
+                        score = resp.hits.hits[i]['_score']
+                        len2 = resp.hits.hits[i]['highlight']['file.content'].length;
+                        highlights = []
+                        content = ''
+                        for (ii=0; ii<len2; ii++) {
+                            partial_content = resp.hits.hits[i]['highlight']['file.content'][ii];
+                            highlights.push(partial_content);
+                            content += partial_content+'\r\n'
+                        }
                         el = {
+                            highlights: highlights,
                             content: content,
-                            title: title
+                            title: title,
+                            score: score
                         }
                         elements.push(el);
                     }                    
